@@ -135,8 +135,8 @@ backup_api() {
       -d "{\"apiName\":\"${api_project}\"}" \
       "$url/invoke/sample:validateApi" \
       -o "$APP_FILE"
-    echo "DEBUG RAW:"
-    cat "$APP_FILE"
+    echo "DEBUG RAW:" >&2
+    cat "$APP_FILE" >&2
 
     echo "IS_NEW_API=false" > "$META_FILE"
 
@@ -147,9 +147,9 @@ backup_api() {
       "$url/rest/apigateway/applications" \
       -o "$APP_FILE"
     
-    echo "DEBUG RAW:"
-    cat "$APP_FILE"
-    
+    echo "DEBUG RAW:" >&2
+    cat "$APP_FILE" >&2
+
     echo "IS_NEW_API=true" > "$META_FILE"
 
   fi
