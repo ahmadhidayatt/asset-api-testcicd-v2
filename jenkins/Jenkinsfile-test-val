@@ -61,15 +61,22 @@ pipeline {
                 def backupFile = ""
 
                 stage("Backup") {
-                  backupFile = sh(
-                    script: """
-                      source ${COMMON_LIB}
-                      backup_api "${API_PROJECT}" "${gw}" "${APIGATEWAY_USERNAME}" "${APIGATEWAY_PASSWORD}"
-                    """,
-                    returnStdout: true
-                  ).trim()
-
-                  echo "Backup file: ${backupFile}"
+                    script {
+                        def result = sh(
+                            script: """
+                              source ${COMMON_LIB}
+                              backup_api "${API_PROJECT}" "${gw}" "${APIGATEWAY_USERNAME}" "${APIGATEWAY_PASSWORD}"
+                            """,
+                            returnStdout: true
+                        ).trim()
+                
+                        def parts = result.split("\\|")
+                        backupFile = parts[0]
+                        appFile = parts[1]
+                
+                        echo "Backup file: ${backupFile}"
+                        echo "App file: ${appFile}"
+                    }
                 }
 
                 stage("Import") {
