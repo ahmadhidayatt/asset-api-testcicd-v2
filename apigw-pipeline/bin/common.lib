@@ -24,7 +24,8 @@ _curl_common_args() {
 
 validate_gateway_up() {
   local url="$1"
-
+  local username="$2"
+  local password="$3"
   echo "Checking Gateway health..."
 
   local http_code
