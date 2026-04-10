@@ -144,6 +144,7 @@ backup_api() {
     echo "API tidak ditemukan → ambil semua aplikasi" >&2
 
     curl -sS -u "${username}:${password}" \
+      -H "Content-Type: application/json" \
       -o "$APP_FILE" \
       "$url/rest/apigateway/applications" \
      
