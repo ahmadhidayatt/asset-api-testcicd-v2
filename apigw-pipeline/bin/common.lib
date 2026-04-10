@@ -246,6 +246,60 @@ validate_api_exists() {
 
   echo "API exists (id=$id)"
 }
+validate_application() {
+  local api_project="$1"
+  local url="$2"
+  local username="$3"
+  local password="$4"
+  
+  APP_FILE="$ROOT_DIR/${api_project}_apps.json"
+  META_FILE="$ROOT_DIR/flagisnew.json"
+
+  # ambil flag
+  local is_new_api
+  is_new_api=$(grep -o '"IS_NEW_API":[^,}]*' "$META_FILE" | cut -d':' -f2 | tr -d ' ')
+
+  echo "IS_NEW_API=$is_new_api" >&2
+
+  local tmp_file="/tmp/app_payload_${api_project}.json"
+
+  # inject ke JSON root
+  sed "s/}$/,\"IS_NEW_API\":${is_new_api}}/" "$APP_FILE" > "$tmp_file"
+
+  echo "Payload sent:" >&2
+  cat "$tmp_file" >&2
+  local resp_file="/tmp/validate_app_response.json"
+
+  echo "Calling validateApplication..." >&2
+
+  local http_code
+  http_code=$(curl -sS \
+    -u "${username}:${password}" \
+    -H "Content-Type: application/json" \
+    --data @"$tmp_file" \
+    -o "$resp_file" \
+    -w "%{http_code}" \
+    "${url}/invoke/sample:validateApplication" || true)
+
+  echo "HTTP Status: $http_code" >&2
+
+  if [ "$http_code" != "200" ]; then
+    echo "Validation FAILED (HTTP error)" >&2
+    cat "$resp_file" >&2
+    return 1
+  fi
+
+  echo "Validation response:" >&2
+  cat "$resp_file" >&2
+
+  # optional: basic check
+  grep -q '"status"' "$resp_file" || {
+    echo "Invalid response format" >&2
+    return 1
+  }
+
+  echo "Application validation OK"
+}
 
 
 ##############################################################################
