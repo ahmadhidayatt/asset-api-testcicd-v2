@@ -129,20 +129,14 @@ backup_api() {
 
   if [ -n "$api_id" ]; then
     echo "API ditemukan: $api_id"
-    AUTH=$(echo -n "${username}:${password}" | base64)
 
     # 🔹 ambil aplikasi berdasarkan API
-    curl -sS \
+    curl -sS -u "${username}:${password}" \
       -H "Content-Type: application/json" \
-      -H "Authorization: Basic ${AUTH}" \
       -d "{\"apiName\":\"${api_project}\"}" \
-      "$url/invoke/sample:validateApi" 
-      | python3 -c '
-import sys, json
-d=json.load(sys.stdin)
-apps=d.get("responseApp",{}).get("application",[])
-print(json.dumps(apps))
-' > "$APP_FILE"
+      "$url/invoke/sample:validateApi" \
+       > /tmp/raw_validate.json
+    cat /tmp/raw_validate.json
 
   else
     echo "API tidak ditemukan → ambil semua aplikasi"
