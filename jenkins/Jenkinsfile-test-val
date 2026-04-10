@@ -8,8 +8,8 @@ pipeline {
   }
 
   environment {
-    COMMON_LIB   = "apigw-pipeline/bin/common.lib"
-    TEST_RESULTS = "apigw-pipeline/test-results"
+    COMMON_LIB   = "bin/common.lib"
+    TEST_RESULTS = "test-results"
   }
 
   stages {
@@ -21,7 +21,7 @@ pipeline {
     stage('Load Properties') {
       steps {
         script {
-          def props = readProperties file: 'apigw-pipeline/jenkins/jenkins.properties'
+          def props = readProperties file: 'jenkins/jenkins.properties'
 
           env.API_PROJECT         = props['api_project']
           env.APIGATEWAY_USERNAME = props['apigateway_username']
