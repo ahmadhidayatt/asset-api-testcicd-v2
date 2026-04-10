@@ -1,0 +1,140 @@
+pipeline {
+  agent any
+
+  options {
+    timestamps()
+    timeout(time: 90, unit: 'MINUTES')
+    disableConcurrentBuilds()
+  }
+
+  environment {
+    COMMON_LIB   = "apigw-pipeline/bin/common.lib"
+    TEST_RESULTS = "apigw-pipeline/test-results"
+  }
+
+  stages {
+
+    stage('Checkout') {
+      steps { checkout scm }
+    }
+
+    stage('Load Properties') {
+      steps {
+        script {
+          def props = readProperties file: 'apigw-pipeline/jenkins/jenkins.properties'
+
+          env.API_PROJECT         = props['api_project']
+          env.APIGATEWAY_USERNAME = props['apigateway_username']
+          env.APIGATEWAY_PASSWORD = props['apigateway_password']
+          env.APIGATEWAY_URLS     = props['apigateway_urls']
+
+          if (!env.APIGATEWAY_URLS) {
+            error "apigateway_urls kosong!"
+          }
+        }
+      }
+    }
+
+    stage('Deploy Sequential') {
+      steps {
+        script {
+
+          def gateways = env.APIGATEWAY_URLS.split(',')
+          def results = [:]
+
+          for (int i = 0; i < gateways.size(); i++) {
+
+            def gw = gateways[i].trim()
+            def stageName = "GW-${i+1} (${gw})"
+
+            stage(stageName) {
+
+              try {
+
+                stage("Precheck") {
+                  sh """
+                    source ${COMMON_LIB}
+                    validate_gateway_up "${gw}"
+                  """
+                }
+
+                def backupFile = ""
+
+                stage("Backup") {
+                  backupFile = sh(
+                    script: """
+                      source ${COMMON_LIB}
+                      backup_api "${API_PROJECT}" "${gw}" "${APIGATEWAY_USERNAME}" "${APIGATEWAY_PASSWORD}"
+                    """,
+                    returnStdout: true
+                  ).trim()
+
+                  echo "Backup file: ${backupFile}"
+                }
+
+                stage("Import") {
+                  sh """
+                    source ${COMMON_LIB}
+                    import_api "${API_PROJECT}" "${gw}" "${APIGATEWAY_USERNAME}" "${APIGATEWAY_PASSWORD}"
+                  """
+                }
+
+                stage("Postcheck") {
+                  sh """
+                    source ${COMMON_LIB}
+                    validate_api_exists "${API_PROJECT}" "${gw}" "${APIGATEWAY_USERNAME}" "${APIGATEWAY_PASSWORD}"
+                  """
+                }
+
+                stage("Test") {
+                  sh """
+                    rm -rf ${TEST_RESULTS}
+                    mkdir -p ${TEST_RESULTS}
+
+                    docker run --rm \
+                      -v \$PWD/apigw-pipeline:/etc/newman \
+                      -w /etc/newman \
+                      postman/newman:latest \
+                      run tests/collection.json \
+                      -e tests/environment.json \
+                      --env-var httpInvokeUrl=${gw} \
+                      --reporters cli,junit \
+                      --reporter-junit-export test-results/result.xml
+                  """
+                }
+
+                results[gw] = "SUCCESS"
+
+              } catch (err) {
+
+                echo "FAILED on ${gw}"
+                results[gw] = "FAILED"
+
+                stage("Rollback") {
+                  sh """
+                    source ${COMMON_LIB}
+                    rollback_api "${backupFile}" "${gw}" "${APIGATEWAY_USERNAME}" "${APIGATEWAY_PASSWORD}"
+                  """
+                }
+
+                error("STOP DEPLOY — failure on ${gw}")
+              }
+            }
+          }
+
+          stage("Summary") {
+            echo "===== DEPLOYMENT SUMMARY ====="
+            results.each { key, value ->
+              echo "${key} → ${value}"
+            }
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    success { echo "DEPLOY SUCCESS" }
+    failure { echo "DEPLOY FAILED" }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "jenkins-env",
+  "name": "Jenkins Environment",
+  "values": [
+    {
+      "key": "httpInvokeUrl",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "username",
+      "value": "Administrator",
+      "enabled": true
+    },
+    {
+      "key": "password",
+      "value": "manage",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}
