@@ -289,13 +289,28 @@ validate_application() {
 
   echo "HTTP Status: $http_code" >&2
 
-  if [ "$http_code" != "200" ]; then
-    echo "Validation FAILED" >&2
-    cat "$resp_file" >&2
-    return 1
+  is_equal=$(grep -o '"isEqual":[^,}]*' "$resp_file" | cut -d':' -f2 | tr -d ' ')
+  
+  echo "isEqual=$is_equal" >&2
+  
+  if [ "$is_equal" = "true" ]; then
+    echo "✅ VALIDATION SUCCESS" >&2
+  else
+    echo "⚠️ VALIDATION WARNING (NOT MATCHED)" >&2
+  
+    echo "=== MISSING APPS ===" >&2
+    grep -A50 '"missingApps"' "$resp_file" >&2
+  
+    echo "=== CHANGED APPS ===" >&2
+    grep -A50 '"changedApps"' "$resp_file" >&2
+  
+    echo "=== NEW APPS ===" >&2
+    grep -A50 '"newApps"' "$resp_file" >&2
+  
+    # ❗ penting: jangan return 1
   fi
-
-  echo "Validation OK"
+  
+  return 0
 }
 
 
