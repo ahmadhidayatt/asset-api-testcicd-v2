@@ -6,6 +6,11 @@ pipeline {
     timeout(time: 90, unit: 'MINUTES')
     disableConcurrentBuilds()
   }
+  withCredentials([usernamePassword(
+    credentialsId: 'apigw-cred',
+    usernameVariable: 'APIGATEWAY_USERNAME',
+    passwordVariable: 'APIGATEWAY_PASSWORD'
+  )]) 
 
   environment {
     COMMON_LIB   = "apigw-pipeline/bin/common.lib"
@@ -24,8 +29,7 @@ pipeline {
           def props = readProperties file: 'apigw-pipeline/jenkins/jenkins.properties'
 
           env.API_PROJECT         = props['api_project']
-          env.APIGATEWAY_USERNAME = props['apigateway_username']
-          env.APIGATEWAY_PASSWORD = props['apigateway_password']
+          
           env.APIGATEWAY_URLS     = props['apigateway_urls']
 
           if (!env.APIGATEWAY_URLS) {
