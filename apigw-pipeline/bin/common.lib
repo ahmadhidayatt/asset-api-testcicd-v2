@@ -124,7 +124,7 @@ backup_api() {
   local api_id
   api_id=$(resolve_api_id_by_name "$api_project" "$url" "$username" "$password")
 
-  BACKUP_FILE="$ROOT_DIR/${api_project}_backup_$(date +%Y%m%d%H%M%S).zip"
+  BACKUP_FILE="$ROOT_DIR/${api_project}_backup.zip"
   APP_FILE="$ROOT_DIR/${api_project}_apps.json"
   META_FILE="$ROOT_DIR/flagisnew.json"
   if [ -n "$api_id" ]; then
