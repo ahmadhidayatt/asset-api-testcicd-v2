@@ -53,21 +53,31 @@ pipeline {
               try {
 
                 stage("Precheck") {
+                  withCredentials([usernamePassword(
+                    credentialsId: 'apigw-cred',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                  )]) {
                   sh """
                     source ${COMMON_LIB}
 
-                    validate_gateway_up "${gw}" "${APIGW_CREDS_USR}" "${APIGW_CREDS_PSW}"
+                    validate_gateway_up "${gw}" "${USER}" "${USER}"
                   """
                 }
 
                 def backupFile = ""
 
                 stage("Backup") {
+                  withCredentials([usernamePassword(
+                    credentialsId: 'apigw-cred',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                  )]) {
                     script {
                         def result = sh(
                             script: """
                               source ${COMMON_LIB}
-                              backup_api "${API_PROJECT}" "${gw}" "${APIGW_CREDS_USR}" "${APIGW_CREDS_PSW}"
+                              backup_api "${API_PROJECT}" "${gw}" "${USER}" "${PASS}"
                             """,
                             returnStdout: true
                         ).trim()
@@ -82,17 +92,27 @@ pipeline {
                 }
 
                 stage("Import") {
+                  withCredentials([usernamePassword(
+                    credentialsId: 'apigw-cred',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                  )]) {
                   sh """
                     source ${COMMON_LIB}
-                    import_api "${API_PROJECT}" "${gw}" "${APIGW_CREDS_USR}" "${APIGW_CREDS_PSW}"
+                    import_api "${API_PROJECT}" "${gw}" "${USER}" "${PASS}"
                   """
                 }
 
                 stage("Postcheck") {
+                  withCredentials([usernamePassword(
+                    credentialsId: 'apigw-cred',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                  )]) {
                   sh """
                     source ${COMMON_LIB}
-                    validate_api_exists "${API_PROJECT}" "${gw}" "${APIGW_CREDS_USR}" "${APIGW_CREDS_PSW}"
-                    validate_application "${API_PROJECT}" "${gw}" "${APIGW_CREDS_USR}" "${APIGW_CREDS_PSW}"
+                    validate_api_exists "${API_PROJECT}" "${gw}" "${USER}" "${PASS}"
+                    validate_application "${API_PROJECT}" "${gw}" "${USER}" "${PASS}"
                   """
                 }
 
@@ -121,9 +141,14 @@ pipeline {
                 results[gw] = "FAILED"
 
                 stage("Rollback") {
+                  withCredentials([usernamePassword(
+                    credentialsId: 'apigw-cred',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                  )]) {
                   sh """
                     source ${COMMON_LIB}
-                    rollback_api "${backupFile}" "${gw}" "${APIGW_CREDS_USR}" "${APIGW_CREDS_PSW}"
+                    rollback_api "${backupFile}" "${gw}" "${USER}" "${PASS}"
                   """
                 }
 
