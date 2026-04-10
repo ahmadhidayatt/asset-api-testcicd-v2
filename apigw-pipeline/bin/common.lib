@@ -120,15 +120,13 @@ backup_api() {
   local url="$2"
   local username="$3"
   local password="$4"
-  
 
   local api_id
   api_id=$(resolve_api_id_by_name "$api_project" "$url" "$username" "$password")
 
   BACKUP_FILE="$ROOT_DIR/${api_project}_backup_$(date +%Y%m%d%H%M%S).zip"
-   APP_FILE="$ROOT_DIR/${api_project}_apps.json"
-  META_FILE="$ROOT_DIR/${api_project}_meta.env"
-
+  APP_FILE="$WORKSPACE/${api_project}_apps.json"
+  META_FILE="$WORKSPACE/flagisnew.json"
   if [ -n "$api_id" ]; then
     echo "API ditemukan: $api_id" >&2
 
@@ -136,15 +134,9 @@ backup_api() {
       -H "Content-Type: application/json" \
       -d "{\"apiName\":\"${api_project}\"}" \
       "$url/invoke/sample:validateApi" \
-      > /tmp/raw_validate.json
-    cat /tmp/raw_validate.json
-    python3 -c '
-import json
-with open("/tmp/raw_validate.json") as f:
-    d=json.load(f)
-apps=d.get("responseApp",{}).get("application",[])
-print(json.dumps(apps))
-' > "$APP_FILE"
+      -o "$APP_FILE"
+    echo "DEBUG RAW:"
+    cat "$APP_FILE"
 
     echo "IS_NEW_API=false" > "$META_FILE"
 
@@ -153,17 +145,13 @@ print(json.dumps(apps))
 
     curl -sS -u "${username}:${password}" \
       "$url/rest/apigateway/applications" \
-      > /tmp/raw_apps.json
-
-    python3 -c '
-import json
-with open("/tmp/raw_apps.json") as f:
-    d=json.load(f)
-apps=d.get("applications",[])
-print(json.dumps(apps))
-' > "$APP_FILE"
-
+      -o "$APP_FILE"
+    
+    echo "DEBUG RAW:"
+    cat "$APP_FILE"
+    
     echo "IS_NEW_API=true" > "$META_FILE"
+
   fi
 
   # 🔹 backup tetap jalan
