@@ -29,6 +29,7 @@ validate_gateway_up() {
 
   local http_code
   http_code=$(curl $(_curl_common_args) -u "${username}:${password}" \
+    -u "${username}:${password}" \
     -o /dev/null \
     -w "%{http_code}" \
     "${url}/rest/apigateway/health" || true)
