@@ -6,15 +6,12 @@ pipeline {
     timeout(time: 90, unit: 'MINUTES')
     disableConcurrentBuilds()
   }
-  withCredentials([usernamePassword(
-    credentialsId: 'apigw-cred',
-    usernameVariable: 'APIGATEWAY_USERNAME',
-    passwordVariable: 'APIGATEWAY_PASSWORD'
-  )]) 
+  
 
   environment {
     COMMON_LIB   = "apigw-pipeline/bin/common.lib"
     TEST_RESULTS = "apigw-pipeline/test-results"
+    APIGW_CREDS = credentials('apigw-cred')
   }
 
   stages {
@@ -59,7 +56,7 @@ pipeline {
                   sh """
                     source ${COMMON_LIB}
 
-                    validate_gateway_up "${gw}" "${APIGATEWAY_USERNAME}" "${APIGATEWAY_PASSWORD}"
+                    validate_gateway_up "${gw}" "${APIGW_CREDS_USR}" "${APIGW_CREDS_PSW}"
                   """
                 }
 
@@ -70,7 +67,7 @@ pipeline {
                         def result = sh(
                             script: """
                               source ${COMMON_LIB}
-                              backup_api "${API_PROJECT}" "${gw}" "${APIGATEWAY_USERNAME}" "${APIGATEWAY_PASSWORD}"
+                              backup_api "${API_PROJECT}" "${gw}" "${APIGW_CREDS_USR}" "${APIGW_CREDS_PSW}"
                             """,
                             returnStdout: true
                         ).trim()
@@ -87,15 +84,15 @@ pipeline {
                 stage("Import") {
                   sh """
                     source ${COMMON_LIB}
-                    import_api "${API_PROJECT}" "${gw}" "${APIGATEWAY_USERNAME}" "${APIGATEWAY_PASSWORD}"
+                    import_api "${API_PROJECT}" "${gw}" "${APIGW_CREDS_USR}" "${APIGW_CREDS_PSW}"
                   """
                 }
 
                 stage("Postcheck") {
                   sh """
                     source ${COMMON_LIB}
-                    validate_api_exists "${API_PROJECT}" "${gw}" "${APIGATEWAY_USERNAME}" "${APIGATEWAY_PASSWORD}"
-                    validate_application "${API_PROJECT}" "${gw}" "${APIGATEWAY_USERNAME}" "${APIGATEWAY_PASSWORD}"
+                    validate_api_exists "${API_PROJECT}" "${gw}" "${APIGW_CREDS_USR}" "${APIGW_CREDS_PSW}"
+                    validate_application "${API_PROJECT}" "${gw}" "${APIGW_CREDS_USR}" "${APIGW_CREDS_PSW}"
                   """
                 }
 
@@ -126,7 +123,7 @@ pipeline {
                 stage("Rollback") {
                   sh """
                     source ${COMMON_LIB}
-                    rollback_api "${backupFile}" "${gw}" "${APIGATEWAY_USERNAME}" "${APIGATEWAY_PASSWORD}"
+                    rollback_api "${backupFile}" "${gw}" "${APIGW_CREDS_USR}" "${APIGW_CREDS_PSW}"
                   """
                 }
 
