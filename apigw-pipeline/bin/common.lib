@@ -125,8 +125,8 @@ backup_api() {
   api_id=$(resolve_api_id_by_name "$api_project" "$url" "$username" "$password")
 
   BACKUP_FILE="$ROOT_DIR/${api_project}_backup_$(date +%Y%m%d%H%M%S).zip"
-  APP_FILE="$WORKSPACE/${api_project}_apps.json"
-  META_FILE="$WORKSPACE/flagisnew.json"
+  APP_FILE="$ROOT_DIR/${api_project}_apps.json"
+  META_FILE="$ROOT_DIR/flagisnew.json"
   if [ -n "$api_id" ]; then
     echo "API ditemukan: $api_id" >&2
 
