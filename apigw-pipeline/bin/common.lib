@@ -138,6 +138,7 @@ backup_api() {
       -d "{\"apiName\":\"${api_project}\"}" \
       "$url/invoke/sample:validateApi" \
       > "$RAW_FILE"
+    echo "DEBUG RAW:"
     cat "$RAW_FILE"
 
     python3 -c '
