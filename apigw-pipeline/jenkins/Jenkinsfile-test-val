@@ -54,6 +54,7 @@ pipeline {
                 stage("Precheck") {
                   sh """
                     source ${COMMON_LIB}
+                    
                     validate_gateway_up "${gw}" "${APIGATEWAY_USERNAME}" "${APIGATEWAY_PASSWORD}"
                   """
                 }
