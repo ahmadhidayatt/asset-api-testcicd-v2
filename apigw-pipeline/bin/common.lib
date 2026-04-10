@@ -133,8 +133,9 @@ backup_api() {
     curl -sS -u "${username}:${password}" \
       -H "Content-Type: application/json" \
       -d "{\"apiName\":\"${api_project}\"}" \
+      -o "$APP_FILE" \
       "$url/invoke/sample:validateApi" \
-      -o "$APP_FILE"
+      
     
 
     echo "IS_NEW_API=false" > "$META_FILE"
@@ -143,8 +144,9 @@ backup_api() {
     echo "API tidak ditemukan → ambil semua aplikasi" >&2
 
     curl -sS -u "${username}:${password}" \
+      -o "$APP_FILE" \
       "$url/rest/apigateway/applications" \
-      -o "$APP_FILE"
+     
     
 
     echo "IS_NEW_API=true" > "$META_FILE"
