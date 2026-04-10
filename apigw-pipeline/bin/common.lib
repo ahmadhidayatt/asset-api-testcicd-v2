@@ -120,6 +120,8 @@ backup_api() {
   local url="$2"
   local username="$3"
   local password="$4"
+  RAW_FILE="/tmp/raw_validate.json"
+
 
   local api_id
   api_id=$(resolve_api_id_by_name "$api_project" "$url" "$username" "$password")
@@ -135,7 +137,8 @@ backup_api() {
       -H "Content-Type: application/json" \
       -d "{\"apiName\":\"${api_project}\"}" \
       "$url/invoke/sample:validateApi" \
-      > /tmp/raw_validate.json
+      > "$RAW_FILE"
+    cat "$RAW_FILE"
 
     python3 -c '
 import json
