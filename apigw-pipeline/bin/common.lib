@@ -137,7 +137,7 @@ backup_api() {
       -H "Content-Type: application/json" \
       -d "{\"apiName\":\"${api_project}\"}" \
       "$url/invoke/sample:validateApi" \
-      > "$RAW_FILE"
+      -o "$RAW_FILE"
     echo "DEBUG RAW:"
     cat "$RAW_FILE"
 
