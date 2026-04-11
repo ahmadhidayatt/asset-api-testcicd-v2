@@ -96,48 +96,41 @@ pipeline {
                   """
                 }
 
-                stage("Test") {
-                  steps {
-                    script {
+              stage("Test") {
+              
+                def host = gw.replace("http://", "").split(":")[0]
+                def esUrl = "http://${host}:9240"
+              
+                echo "APIGW URL: ${gw}"
+                echo "ES URL: ${esUrl}"
+              
+                withCredentials([usernamePassword(
+                  credentialsId: 'apigw-cred',
+                  usernameVariable: 'USR',
+                  passwordVariable: 'PSW'
+                )]) {
                 
-                      def host = gw.replace("http://", "").split(":")[0]
-                      def esUrl = "http://${host}:9240"
-
-                      echo "APIGW URL: ${gw}"
-                      echo "ES URL: ${esUrl}"
-
-                      withCredentials([usernamePassword(
-                        credentialsId: 'apigw-cred',
-                        usernameVariable: 'USR',
-                        passwordVariable: 'PSW'
-                      )]) {
-                      
-                        sh """
-                          # cleanup
-                          rm -rf ${TEST_RESULTS}
-                          mkdir -p ${TEST_RESULTS}
-
-                          echo "Running Newman test..."
-
-                          docker run --rm \
-                            -v \\$PWD/apigw-pipeline:/etc/newman \
-                            -w /etc/newman \
-                            postman/newman:5.3.2 \
-                            run tests/collection.json \
-                            -e tests/environment.json \
-                            --env-var username=\\$USR \
-                            --env-var password=\\$PSW \
-                            --env-var apigwUrl=${gw} \
-                            --env-var esUrl=${esUrl} \
-                            --reporters cli,junit \
-                            --reporter-junit-export test-results/result.xml
-                        """
-                      }
-                
-                      junit "${TEST_RESULTS}/result.xml"
-                    }
-                  }
+                  sh """
+                    rm -rf ${TEST_RESULTS}
+                    mkdir -p ${TEST_RESULTS}
+              
+                    docker run --rm \
+                      -v \\$PWD/apigw-pipeline:/etc/newman \
+                      -w /etc/newman \
+                      postman/newman:5.3.2 \
+                      run tests/collection.json \
+                      -e tests/environment.json \
+                      --env-var username=\\$USR \
+                      --env-var password=\\$PSW \
+                      --env-var apigwUrl=${gw} \
+                      --env-var esUrl=${esUrl} \
+                      --reporters cli,junit \
+                      --reporter-junit-export test-results/result.xml
+                  """
                 }
+              
+                junit "${TEST_RESULTS}/result.xml"
+              }
 
                 results[gw] = "SUCCESS"
 
