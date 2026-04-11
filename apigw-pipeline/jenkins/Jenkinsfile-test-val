@@ -98,6 +98,7 @@ pipeline {
                 stage("Test") {
                   def host = gw.replace("http://", "").split(":")[0]
                   def esUrl = "http://${host}:9240"
+                  def mountPath = "${WORKSPACE}/apigw-pipeline"
                   echo "APIGW URL: ${gw}"
                   echo "ES URL: ${esUrl}"
                   withCredentials([usernamePassword(
@@ -109,7 +110,7 @@ pipeline {
                       rm -rf ${TEST_RESULTS}
                       mkdir -p ${TEST_RESULTS
                       docker run --rm \
-                        -v ${WORKSPACE}/apigw-pipeline:/etc/newman \
+                        -v ${mountPath}:/etc/newman \
                         -w /etc/newman \
                         postman/newman:latest \
                         run tests/collection.json \
