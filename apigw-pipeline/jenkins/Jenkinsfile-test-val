@@ -100,6 +100,8 @@ pipeline {
                   sh """
                     rm -rf ${TEST_RESULTS}
                     mkdir -p ${TEST_RESULTS}
+                    def host = gw.replace("http://", "").split(":")[0]
+                    def esUrl = "http://${gw}:9240"
 
                     docker run --rm \
                       -v \$PWD/apigw-pipeline:/etc/newman \
@@ -110,7 +112,7 @@ pipeline {
                       --env-var username=${APIGW_CREDS_USR} \
                       --env-var password=${APIGW_CREDS_PSW} \
                       --env-var httpInvokeUrl=${gw} \
-                      --env-var esUrl=http://$(echo ${gw} | sed 's|http://||' | cut -d: -f1):9240 \
+                      --env-var esUrl=${esUrl} \
                       --reporters cli,junit \
                       --reporter-junit-export test-results/result.xml
                   """
