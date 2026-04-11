@@ -139,7 +139,7 @@ pipeline {
                     }
                   }
                 }
-
+              }
           stage("Summary") {
             echo "===== DEPLOYMENT SUMMARY ====="
             results.each { key, value ->
