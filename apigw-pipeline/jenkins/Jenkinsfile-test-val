@@ -99,14 +99,13 @@ pipeline {
                 stage("Test") {
                   steps {
                     script {
-                    
+                
                       def host = gw.replace("http://", "").split(":")[0]
                       def esUrl = "http://${host}:9240"
 
                       echo "APIGW URL: ${gw}"
                       echo "ES URL: ${esUrl}"
 
-                      
                       withCredentials([usernamePassword(
                         credentialsId: 'apigw-cred',
                         usernameVariable: 'USR',
@@ -134,12 +133,31 @@ pipeline {
                             --reporter-junit-export test-results/result.xml
                         """
                       }
-
+                
                       junit "${TEST_RESULTS}/result.xml"
                     }
                   }
                 }
+
+                results[gw] = "SUCCESS"
+
+              } catch (err) {
+
+                echo "FAILED on ${gw}"
+                results[gw] = "FAILED"
+
+                stage("Rollback") {
+                  sh """
+                    source ${COMMON_LIB}
+                    rollback_api "${backupFile}" "${gw}" "${APIGW_CREDS_USR}" "${APIGW_CREDS_PSW}"
+                  """
+                }
+
+                error("STOP DEPLOY — failure on ${gw}")
               }
+            }
+          }
+
           stage("Summary") {
             echo "===== DEPLOYMENT SUMMARY ====="
             results.each { key, value ->
