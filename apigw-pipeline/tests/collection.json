@@ -11,10 +11,67 @@
         "method": "GET",
         "url": {
           "raw": "{{httpInvokeUrl}}/rest/apigateway/health",
-          "host": ["{{httpInvokeUrl}}"],
-          "path": ["rest", "apigateway", "health"]
+          "host": [
+            "{{httpInvokeUrl}}"
+          ],
+          "path": [
+            "rest",
+            "apigateway",
+            "health"
+          ]
         }
       }
+    },
+    {
+      "name": "Elasticsearch Cluster Health",
+      "request": {
+        "method": "GET",
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{username}}"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{httpInvokeUrl}}:9240/_cluster/health",
+          "host": [
+            "{{httpInvokeUrl}}:9240"
+          ],
+          "path": [
+            "_cluster",
+            "health"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "let json = pm.response.json();",
+              "",
+              "pm.test(\"Cluster not RED\", function () {",
+              "    pm.expect(json.status).to.not.eql(\"red\");",
+              "});",
+              "",
+              "pm.test(\"Cluster has nodes\", function () {",
+              "    pm.expect(json.number_of_nodes).to.be.above(0);",
+              "});"
+            ]
+          }
+        }
+      ]
     }
   ]
 }

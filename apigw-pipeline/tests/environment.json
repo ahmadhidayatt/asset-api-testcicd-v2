@@ -9,12 +9,12 @@
     },
     {
       "key": "username",
-      "value": "Administrator",
+      "value": "",
       "enabled": true
     },
     {
       "key": "password",
-      "value": "manage",
+      "value": "",
       "enabled": true
     }
   ],

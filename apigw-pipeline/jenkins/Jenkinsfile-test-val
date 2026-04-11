@@ -107,6 +107,8 @@ pipeline {
                       postman/newman:latest \
                       run tests/collection.json \
                       -e tests/environment.json \
+                      --env-var username=${APIGW_CREDS_USR} \
+                      --env-var password=${APIGW_CREDS_PSW} \
                       --env-var httpInvokeUrl=${gw} \
                       --reporters cli,junit \
                       --reporter-junit-export test-results/result.xml
