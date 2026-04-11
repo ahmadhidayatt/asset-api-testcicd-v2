@@ -6,7 +6,6 @@ pipeline {
     timeout(time: 90, unit: 'MINUTES')
     disableConcurrentBuilds()
   }
-  
 
   environment {
     COMMON_LIB   = "apigw-pipeline/bin/common.lib"
@@ -26,7 +25,7 @@ pipeline {
           def props = readProperties file: 'apigw-pipeline/jenkins/jenkins.properties'
 
           env.API_PROJECT         = props['api_project']
-          
+
           env.APIGATEWAY_URLS     = props['apigateway_urls']
 
           if (!env.APIGATEWAY_URLS) {
@@ -71,11 +70,11 @@ pipeline {
                             """,
                             returnStdout: true
                         ).trim()
-                
+
                         def parts = result.split("\\|")
                         backupFile = parts[0]
                         appFile = parts[1]
-                
+
                         echo "Backup file: ${backupFile}"
                         echo "App file: ${appFile}"
                     }
@@ -110,7 +109,7 @@ pipeline {
                       rm -rf ${TEST_RESULTS}
                       mkdir -p ${TEST_RESULTS
                       docker run --rm \
-                        -v \$PWD/apigw-pipeline:/etc/newman \
+                        -v ${WORKSPACE}/apigw-pipeline:/etc/newman \
                         -w /etc/newman \
                         postman/newman:latest \
                         run tests/collection.json \
@@ -122,9 +121,9 @@ pipeline {
                         --reporters cli,junit \
                         --reporter-junit-export test-results/result.xml
                     """
-                    }
+                      }
                   junit "${TEST_RESULTS}/result.xml"
-                }
+                  }
 
                 results[gw] = "SUCCESS"
 
@@ -141,9 +140,9 @@ pipeline {
                 }
 
                 error("STOP DEPLOY — failure on ${gw}")
+                }
               }
             }
-          }
 
           stage("Summary") {
             echo "===== DEPLOYMENT SUMMARY ====="
@@ -151,13 +150,13 @@ pipeline {
               echo "${key} → ${value}"
             }
           }
+          }
         }
       }
     }
-  }
 
   post {
     success { echo "DEPLOY SUCCESS" }
     failure { echo "DEPLOY FAILED" }
   }
-}
+  }
