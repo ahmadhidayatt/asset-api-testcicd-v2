@@ -110,6 +110,7 @@ pipeline {
                       --env-var username=${APIGW_CREDS_USR} \
                       --env-var password=${APIGW_CREDS_PSW} \
                       --env-var httpInvokeUrl=${gw} \
+                      --env-var esUrl=http://$(echo ${gw} | sed 's|http://||' | cut -d: -f1):9240 \
                       --reporters cli,junit \
                       --reporter-junit-export test-results/result.xml
                   """

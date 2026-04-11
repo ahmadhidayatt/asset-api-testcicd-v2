@@ -10,8 +10,8 @@
       "request": {
         "method": "GET",
         "url": {
-          "raw": "{{httpInvokeUrl}}/rest/apigateway/health",
-          "host": ["{{httpInvokeUrl}}"],
+          "raw": "{{apigwUrl}}/rest/apigateway/health",
+          "host": ["{{apigwUrl}}"],
           "path": ["rest", "apigateway", "health"]
         }
       },
@@ -40,8 +40,8 @@
           ]
         },
         "url": {
-          "raw": "{{httpInvokeUrl}}:9240/_cluster/health",
-          "host": ["{{httpInvokeUrl}}:9240"],
+          "raw": "{{esUrl}}/_cluster/health",
+          "host": ["{{esUrl}}"],
           "path": ["_cluster", "health"]
         }
       },
@@ -50,10 +50,16 @@
           "listen": "test",
           "script": {
             "exec": [
-              "// status code wajib 200",
+              "// pastikan request sukses dulu",
               "pm.test(\"Status 200\", function () {",
               "    pm.response.to.have.status(200);",
               "});",
+              "",
+              "// kalau gagal jangan lanjut parsing",
+              "if (pm.response.code !== 200) {",
+              "    console.error(\"Request failed, skip JSON parsing\");",
+              "    return;",
+              "}",
               "",
               "let json = pm.response.json();",
               "",
@@ -69,15 +75,15 @@
               "",
               "// ⚠️ warning kalau single node + yellow",
               "if (json.status === \"yellow\" && json.number_of_nodes === 1) {",
-              "    console.warn(\"Single node cluster → yellow is expected (no replica allocation)\");",
+              "    console.warn(\"Single node cluster → expected yellow (no replica)\");",
               "}",
               "",
-              "// ⚠️ warning kalau multi-node tapi masih yellow",
+              "// ⚠️ warning kalau multi-node tapi yellow",
               "if (json.status === \"yellow\" && json.number_of_nodes > 1) {",
-              "    console.warn(\"WARNING: Yellow on multi-node cluster → possible issue\");",
+              "    console.warn(\"WARNING: Yellow on multi-node cluster\");",
               "}",
               "",
-              "// sanity check node harus ada",
+              "// sanity check",
               "pm.test(\"Cluster has nodes\", function () {",
               "    pm.expect(json.number_of_nodes).to.be.above(0);",
               "});"
