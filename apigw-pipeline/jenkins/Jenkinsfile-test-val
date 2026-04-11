@@ -97,45 +97,48 @@ pipeline {
                 }
 
                 stage("Test") {
-                  sh """
-                    rm -rf ${TEST_RESULTS}
-                    mkdir -p ${TEST_RESULTS}
-                    def host = gw.replace("http://", "").split(":")[0]
-                    def esUrl = "http://${gw}:9240"
+                  steps {
+                    script {
+                    
+                      def host = gw.replace("http://", "").split(":")[0]
+                      def esUrl = "http://${host}:9240"
 
-                    docker run --rm \
-                      -v \$PWD/apigw-pipeline:/etc/newman \
-                      -w /etc/newman \
-                      postman/newman:latest \
-                      run tests/collection.json \
-                      -e tests/environment.json \
-                      --env-var username=${APIGW_CREDS_USR} \
-                      --env-var password=${APIGW_CREDS_PSW} \
-                      --env-var httpInvokeUrl=${gw} \
-                      --env-var esUrl=${esUrl} \
-                      --reporters cli,junit \
-                      --reporter-junit-export test-results/result.xml
-                  """
+                      echo "APIGW URL: ${gw}"
+                      echo "ES URL: ${esUrl}"
+
+                      
+                      withCredentials([usernamePassword(
+                        credentialsId: 'apigw-cred',
+                        usernameVariable: 'USR',
+                        passwordVariable: 'PSW'
+                      )]) {
+                      
+                        sh """
+                          # cleanup
+                          rm -rf ${TEST_RESULTS}
+                          mkdir -p ${TEST_RESULTS}
+
+                          echo "Running Newman test..."
+
+                          docker run --rm \
+                            -v \\$PWD/apigw-pipeline:/etc/newman \
+                            -w /etc/newman \
+                            postman/newman:5.3.2 \
+                            run tests/collection.json \
+                            -e tests/environment.json \
+                            --env-var username=\\$USR \
+                            --env-var password=\\$PSW \
+                            --env-var apigwUrl=${gw} \
+                            --env-var esUrl=${esUrl} \
+                            --reporters cli,junit \
+                            --reporter-junit-export test-results/result.xml
+                        """
+                      }
+
+                      junit "${TEST_RESULTS}/result.xml"
+                    }
+                  }
                 }
-
-                results[gw] = "SUCCESS"
-
-              } catch (err) {
-
-                echo "FAILED on ${gw}"
-                results[gw] = "FAILED"
-
-                stage("Rollback") {
-                  sh """
-                    source ${COMMON_LIB}
-                    rollback_api "${backupFile}" "${gw}" "${APIGW_CREDS_USR}" "${APIGW_CREDS_PSW}"
-                  """
-                }
-
-                error("STOP DEPLOY — failure on ${gw}")
-              }
-            }
-          }
 
           stage("Summary") {
             echo "===== DEPLOYMENT SUMMARY ====="
