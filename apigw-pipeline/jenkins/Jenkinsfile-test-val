@@ -100,10 +100,10 @@ pipeline {
               
                 def host = gw.replace("http://", "").split(":")[0]
                 def esUrl = "http://${host}:9240"
-              
+
                 echo "APIGW URL: ${gw}"
                 echo "ES URL: ${esUrl}"
-              
+
                 withCredentials([usernamePassword(
                   credentialsId: 'apigw-cred',
                   usernameVariable: 'USR',
@@ -113,11 +113,11 @@ pipeline {
                   sh """
                     rm -rf ${TEST_RESULTS}
                     mkdir -p ${TEST_RESULTS}
-              
+
                     docker run --rm \
                       -v \\$PWD/apigw-pipeline:/etc/newman \
                       -w /etc/newman \
-                      postman/newman:5.3.2 \
+                      postman/newman:latest \
                       run tests/collection.json \
                       -e tests/environment.json \
                       --env-var username=\\$USR \
@@ -128,7 +128,7 @@ pipeline {
                       --reporter-junit-export test-results/result.xml
                   """
                 }
-              
+
                 junit "${TEST_RESULTS}/result.xml"
               }
 
