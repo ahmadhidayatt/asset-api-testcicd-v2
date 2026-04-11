@@ -10,8 +10,8 @@
       "request": {
         "method": "GET",
         "url": {
-          "raw": "{{apigwUrl}}/rest/apigateway/health",
-          "host": ["{{apigwUrl}}"],
+          "raw": "{{httpInvokeUrl}}/rest/apigateway/health",
+          "host": ["{{httpInvokeUrl}}"],
           "path": ["rest", "apigateway", "health"]
         }
       },
