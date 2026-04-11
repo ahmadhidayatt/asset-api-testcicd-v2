@@ -9,10 +9,29 @@
       "name": "APIGW Health Check",
       "request": {
         "method": "GET",
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{username}}"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}"
+            }
+          ]
+        },
         "url": {
           "raw": "{{httpInvokeUrl}}/rest/apigateway/health",
-          "host": ["{{httpInvokeUrl}}"],
-          "path": ["rest", "apigateway", "health"]
+          "host": [
+            "{{httpInvokeUrl}}"
+          ],
+          "path": [
+            "rest",
+            "apigateway",
+            "health"
+          ]
         }
       },
       "event": [
@@ -35,14 +54,25 @@
         "auth": {
           "type": "basic",
           "basic": [
-            { "key": "username", "value": "{{username}}" },
-            { "key": "password", "value": "{{password}}" }
+            {
+              "key": "username",
+              "value": "{{username}}"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}"
+            }
           ]
         },
         "url": {
           "raw": "{{esUrl}}/_cluster/health",
-          "host": ["{{esUrl}}"],
-          "path": ["_cluster", "health"]
+          "host": [
+            "{{esUrl}}"
+          ],
+          "path": [
+            "_cluster",
+            "health"
+          ]
         }
       },
       "event": [
