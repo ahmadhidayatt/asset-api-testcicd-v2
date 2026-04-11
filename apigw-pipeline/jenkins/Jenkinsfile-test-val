@@ -10,6 +10,7 @@ pipeline {
   environment {
     COMMON_LIB   = "apigw-pipeline/bin/common.lib"
     TEST_RESULTS = "apigw-pipeline/test-results"
+    APIGW_CREDS = credentials('apigw-cred')
   }
 
   stages {
@@ -23,8 +24,9 @@ pipeline {
         script {
           def props = readProperties file: 'apigw-pipeline/jenkins/jenkins.properties'
 
-          env.API_PROJECT     = props['api_project']
-          env.APIGATEWAY_URLS = props['apigateway_urls']
+          env.API_PROJECT         = props['api_project']
+
+          env.APIGATEWAY_URLS     = props['apigateway_urls']
 
           if (!env.APIGATEWAY_URLS) {
             error "apigateway_urls kosong!"
@@ -40,93 +42,83 @@ pipeline {
           def gateways = env.APIGATEWAY_URLS.split(',')
           def results = [:]
 
-          for (gw in gateways) {
+          for (int i = 0; i < gateways.size(); i++) {
 
-            gw = gw.trim()
+            def gw = gateways[i].trim()
+            def stageName = "GW-${i+1} (${gw})"
 
-            stage("GW (${gw})") {
-
-              def backupFile = ""
+            stage(stageName) {
 
               try {
 
-                withCredentials([usernamePassword(
-                  credentialsId: 'apigw-cred',
-                  usernameVariable: 'USR',
-                  passwordVariable: 'PSW'
-                )]) {
+                stage("Precheck") {
+                  sh """
+                    source ${COMMON_LIB}
 
-                  // ================= PRECHECK =================
-                  stage("Precheck") {
-                    sh """
-                      source ${COMMON_LIB}
-                      validate_gateway_up "${gw}" "\\$USR" "\\$PSW"
-                    """
-                  }
-
-                  // ================= BACKUP =================
-                  stage("Backup") {
-                    def result = sh(
-                      script: """
-                        source ${COMMON_LIB}
-                        backup_api "${API_PROJECT}" "${gw}" "\\$USR" "\\$PSW"
-                      """,
-                      returnStdout: true
-                    ).trim()
-
-                    def parts = result.split("\\|")
-                    backupFile = parts[0]
-
-                    echo "Backup file: ${backupFile}"
-                  }
-
-                  // ================= IMPORT =================
-                  stage("Import") {
-                    sh """
-                      source ${COMMON_LIB}
-                      import_api "${API_PROJECT}" "${gw}" "\\$USR" "\\$PSW"
-                    """
-                  }
-
-                  // ================= POSTCHECK =================
-                  stage("Postcheck") {
-                    sh """
-                      source ${COMMON_LIB}
-                      validate_api_exists "${API_PROJECT}" "${gw}" "\\$USR" "\\$PSW"
-                      validate_application "${API_PROJECT}" "${gw}" "\\$USR" "\\$PSW"
-                    """
-                  }
-
-                  // ================= TEST =================
-                  stage("Test") {
-
-                    def host = gw.replace("http://", "").split(":")[0]
-                    def esUrl = "http://${host}:9240"
-
-                    echo "APIGW URL: ${gw}"
-                    echo "ES URL: ${esUrl}"
-
-                    sh """
-                      rm -rf ${TEST_RESULTS}
-                      mkdir -p ${TEST_RESULTS}
-
-                      docker run --rm \
-                        -v "${WORKSPACE}/apigw-pipeline:/etc/newman" \
-                        -w /etc/newman \
-                        postman/newman:5.3.2 \
-                        run tests/collection.json \
-                        -e tests/environment.json \
-                        --env-var username=\\$USR \
-                        --env-var password=\\$PSW \
-                        --env-var httpInvokeUrl=${gw} \
-                        --env-var esUrl=${esUrl} \
-                        --reporters cli,junit \
-                        --reporter-junit-export test-results/result.xml
-                    """
-
-                    junit "${TEST_RESULTS}/result.xml"
-                  }
+                    validate_gateway_up "${gw}" "${APIGW_CREDS_USR}" "${APIGW_CREDS_PSW}"
+                  """
                 }
+
+                def backupFile = ""
+
+                stage("Backup") {
+                    script {
+                        def result = sh(
+                            script: """
+                              source ${COMMON_LIB}
+                              backup_api "${API_PROJECT}" "${gw}" "${APIGW_CREDS_USR}" "${APIGW_CREDS_PSW}"
+                            """,
+                            returnStdout: true
+                        ).trim()
+
+                        def parts = result.split("\\|")
+                        backupFile = parts[0]
+                        appFile = parts[1]
+
+                        echo "Backup file: ${backupFile}"
+                        echo "App file: ${appFile}"
+                    }
+                }
+
+                stage("Import") {
+                  sh """
+                    source ${COMMON_LIB}
+                    import_api "${API_PROJECT}" "${gw}" "${APIGW_CREDS_USR}" "${APIGW_CREDS_PSW}"
+                  """
+                }
+
+                stage("Postcheck") {
+                  sh """
+                    source ${COMMON_LIB}
+                    validate_api_exists "${API_PROJECT}" "${gw}" "${APIGW_CREDS_USR}" "${APIGW_CREDS_PSW}"
+                    validate_application "${API_PROJECT}" "${gw}" "${APIGW_CREDS_USR}" "${APIGW_CREDS_PSW}"
+                  """
+                }
+
+                stage("Test") {
+                  def host = gw.replace("http://", "").split(":")[0]
+                  def esUrl = "http://${host}:9240"
+                  echo "APIGW URL: ${gw}"
+                  echo "ES URL: ${esUrl}"
+                  sh """
+                    rm -rf ${TEST_RESULTS}
+                    mkdir -p ${TEST_RESULTS
+                    docker run --rm \
+                      -v \$PWD/apigw-pipeline:/etc/newman \
+                      -w /etc/newman \
+                      postman/newman:latest \
+                      run tests/collection.json \
+                      -e tests/environment.json \
+                      --env-var username=${APIGW_CREDS_USR} \
+                      --env-var password=${APIGW_CREDS_PSW} \
+                      --env-var httpInvokeUrl=${gw} \
+                      --env-var esUrl=${esUrl} \
+                      --reporters cli,junit \
+                      --reporter-junit-export test-results/result.xml
+                  """
+
+                  junit "${TEST_RESULTS}/result.xml"
+                  }
 
                 results[gw] = "SUCCESS"
 
@@ -135,24 +127,17 @@ pipeline {
                 echo "FAILED on ${gw}"
                 results[gw] = "FAILED"
 
-                withCredentials([usernamePassword(
-                  credentialsId: 'apigw-cred',
-                  usernameVariable: 'USR',
-                  passwordVariable: 'PSW'
-                )]) {
-
-                  stage("Rollback") {
-                    sh """
-                      source ${COMMON_LIB}
-                      rollback_api "${backupFile}" "${gw}" "\\$USR" "\\$PSW"
-                    """
-                  }
+                stage("Rollback") {
+                  sh """
+                    source ${COMMON_LIB}
+                    rollback_api "${backupFile}" "${gw}" "${APIGW_CREDS_USR}" "${APIGW_CREDS_PSW}"
+                  """
                 }
 
                 error("STOP DEPLOY — failure on ${gw}")
+                }
               }
             }
-          }
 
           stage("Summary") {
             echo "===== DEPLOYMENT SUMMARY ====="
@@ -160,13 +145,13 @@ pipeline {
               echo "${key} → ${value}"
             }
           }
+          }
         }
       }
     }
-  }
 
   post {
     success { echo "DEPLOY SUCCESS" }
     failure { echo "DEPLOY FAILED" }
   }
-}
+  }
